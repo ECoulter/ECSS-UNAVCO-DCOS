@@ -1,0 +1,66 @@
+#BEWARE! These depend on your "clouds.yaml" file!
+# If you are not on Jetstream, or your Openstack cloud is not named "tacc"
+# THIS WILL NOT WORK!
+# The necessary vars are pulled into the main playbook via a
+# vars_files:
+# directive at the beginning.
+
+#Yes, this is hideous, but have to play nice with multi-user allocations!
+internal_prefix: "{{ clouds.tacc.auth.username }}-{{ clouds.tacc.auth.project_name }}"
+
+cloud_name: "tacc"
+
+#Network definitions
+network_name: "{{ internal_prefix }}-network"
+network_cidr: '10.0.0.0/24'
+subnet_name: "{{ internal_prefix }}-private-subnet"
+router_name: "{{ internal_prefix }}-router"
+
+#security groups
+sec_group_global: "{{ internal_prefix }}-global"
+sec_group_internal: "{{ internal_prefix }}-internal"
+
+#ssh key used with Jetstream
+JS_key_local_path: "/home/jecoulte/.ssh/testkey.pem"
+
+#SSH key used in instance creation - must be the name in 'openstack keypair list'!
+JS_ssh_keyname: "jetstream_key"
+
+#Images for various instances - DON'T CHANGE THIS UNLESS YOU EXPECT 
+#   THE NEW IMAGE TO WORK
+#   WITH THE DCOS INSTALLATION!
+default_image: "JS-API-Featured-CentOS7-Dec-14-2018"
+#server_image: "JS-API-Featured-CentOS6-Sep-18-2018"
+#bootstrap_image: "JS-API-Featured-CentOS6-Sep-18-2018"
+#agent_image: "JS-API-Featured-CentOS6-Sep-18-2018"
+
+#server hostnames - remember the multi-user allocation!
+# If adding nodes, search for the tag NODELISTADD in this file to be sure you add all necessary vars
+server_hostname: "{{ clouds.tacc.auth.username }}-dcos-server"
+bootstrap_hostname: "{{ clouds.tacc.auth.username }}-dcos-bootstrap"
+agent1_hostname: "{{ clouds.tacc.auth.username }}-dcos-agent1"
+agent2_hostname: "{{ clouds.tacc.auth.username }}-dcos-agent2"
+public_agent1_hostname: "{{ clouds.tacc.auth.username }}-dcos-pub-agent-1"
+
+#Instance sizes
+default_size: "m1.small"
+#master_size: "m1.small"
+#bootstrap_size: "m1.medium"
+#agent1_size: "m1.large"
+#agent2_size: "m1.large"
+
+#IF YOU ADD NODES, CHECK THE PLAYBOOKS FOR THE TAG NODELISTWARN - SOME TASKS DEPEND ON THE ORDER
+# OF THIS LIST!
+#NODELISTADD
+dcos_instance_list:
+  - { name: "{{ server_hostname }}", image: "{{ server_image | default(default_image) }}", size: "{{ server_size | default(default_size) }}", meta: { hostname: "{{ server_hostname }}", dcos: "master"}, auto_ip: "yes" }
+  - { name: "{{ bootstrap_hostname }}", image: "{{ bootstrap_image | default(default_image) }}", size: "{{ bootstrap_size | default(default_size) }}", meta: { hostname: "{{ bootstrap_hostname }}", dcos: "bootstrap"}, auto_ip: "yes" }
+  - { name: "{{ agent1_hostname }}", image: "{{ agent_image | default(default_image) }}", size: "{{ agent_size | default(default_size) }}", meta: { hostname: "{{ agent1_hostname }}", dcos: "agent"}, auto_ip: "no" }
+  - { name: "{{ agent2_hostname }}", image: "{{ agent_image | default(default_image) }}", size: "{{ agent_size | default(default_size) }}", meta: { hostname: "{{ agent2_hostname }}", dcos: "agent"}, auto_ip: "no" }
+  - { name: "{{ public_agent1_hostname }}", image: "{{ agent_image | default(default_image) }}", size: "{{ agent_size | default(default_size) }}", meta: { hostname: "{{ public_agent1_hostname }}", dcos: "pubagent"}, auto_ip: "yes" }
+
+#NODELISTADD
+public_ip_instance_list:
+  - { name: "{{ server_hostname }}" }
+  - { name: "{{ bootstrap_hostname }}" }
+  - { name: "{{ public_agent1_hostname }}" }

@@ -1,0 +1,61 @@
+---
+
+- hosts: localhost
+
+  vars_files:
+    - clouds.yaml
+
+  tasks:
+
+#  - name: Display all variables/facts known for a host
+#    debug:
+#      var: hostvars[inventory_hostname]
+
+  - name: release the floating ip
+    os_floating_ip:
+      cloud: tacc
+      state: absent
+      purge: yes
+      server: "{{ server_hostname }}"
+
+  - name: destroy the node
+    os_server:
+      timeout: 200
+      state: absent
+      name: "{{ item.name }}"
+      cloud: tacc
+      key_name: jetstream_key
+      timeout: 200
+      auto_ip: yes
+      network: "{{ network_name }}"
+    loop: "{{ dcos_instance_list }}"
+
+  - name: destroy the router
+    os_router:
+      cloud: tacc
+      state: absent
+      name: "{{ router_name }}"
+      network: public
+      interfaces:
+        - "{{ subnet_name }}"
+  
+  - name: destroy the subnet
+    os_subnet: 
+      state: absent
+      network_name: "{{ network_name }}"
+      name: "{{ subnet_name }}"
+      cidr: 10.0.0.0/24
+      cloud: tacc
+
+  - name: destroy the private network
+    os_network:
+      cloud: tacc
+      external: no
+      name: "{{ network_name }}"
+      state: absent
+
+#  - name: Display all variables/facts known for a host
+#    debug:
+#      var: hostvars[inventory_hostname]
+#      name: "{{ cloud.tacc.auth.username }}-{{ cloud.tacc.auth.project_name }}-private"
+

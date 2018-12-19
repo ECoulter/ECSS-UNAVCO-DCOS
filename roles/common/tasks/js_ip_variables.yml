@@ -1,0 +1,31 @@
+---
+
+#THIS HARDCODES THE INDEX OF THE os_hosts VARIABLE - IF YOU ADD NODES, THIS COULD BREAK - NODELISTWARN
+    - name: set main server ip as fact
+      set_fact: 
+        dcos_master_address: "{{ hostvars['localhost']['os_hosts']['results'][0]['openstack']['public_v4'] }}"
+  
+#THIS HARDCODES THE INDEX OF THE os_hosts VARIABLE - IF YOU ADD NODES, THIS COULD BREAK - NODELISTWARN
+    - name: set master internal ip as fact
+      set_fact: 
+        dcos_master_list: 
+         - "{{ hostvars['localhost']['os_hosts']['results'][0]['openstack']['private_v4'] }}"
+         #- "{{ os_hosts.results[0]['openstack']['private_v4'] }}"
+
+#THIS HARDCODES THE INDEX OF THE os_hosts VARIABLE - IF YOU ADD NODES, THIS COULD BREAK - NODELISTWARN
+    - name: set bootstrap server ip as fact
+      set_fact: 
+        dcos_bootstrap_ip: "{{ hostvars['localhost']['os_hosts']['results'][1]['openstack']['private_v4'] }}"
+
+#    - name: debug dcos bootstrap_ip
+#      debug:
+#        var: dcos_bootstrap_ip
+#
+#    - name: debug dcos master_address
+#      debug:
+#        var: dcos_master_address
+#
+#    - name: debug dcos master_list
+#      debug:
+#        var: dcos_master_list
+    

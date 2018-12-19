@@ -1,0 +1,151 @@
+---
+
+- hosts: localhost
+
+  vars_files:
+    - clouds.yaml
+
+  tasks:
+
+#  - name: Display all variables/facts known for a host
+#    debug:
+#      var: hostvars[inventory_hostname]
+
+  - name: create a private network
+    os_network:
+      cloud: "{{ cloud_name }}"
+      external: no
+      name: "{{ network_name }}"
+
+#  - name: Display all variables/facts known for a host
+#    debug:
+#      var: hostvars[inventory_hostname]
+#      name: "{{ cloud.tacc.auth.username }}-{{ cloud.tacc.auth.project_name }}-private"
+
+  - name: create security group for internal ports
+    os_security_group:
+      cloud: "{{ cloud_name }}"
+      state: present
+      name: "{{ sec_group_internal }}"
+      description: security group for internal access
+
+  - name: allow icmp internally
+    os_security_group_rule:
+      cloud: "{{ cloud_name }}"
+      security_group: "{{ sec_group_internal }}"
+      protocol: icmp
+      remote_ip_prefix: "{{ network_cidr }}"
+
+  - name: allow all tcp internally
+    os_security_group_rule:
+      cloud: "{{ cloud_name }}"
+      security_group: "{{ sec_group_internal }}"
+      protocol: tcp
+      port_range_min: 1
+      port_range_max: 65535
+      remote_ip_prefix: "{{ network_cidr }}"
+
+  - name: allow all udp internally
+    os_security_group_rule:
+      cloud: "{{ cloud_name }}"
+      security_group: "{{ sec_group_internal }}"
+      protocol: udp
+      port_range_min: 1
+      port_range_max: 65535
+      remote_ip_prefix: "{{ network_cidr }}"
+
+  - name: create public-facing security group
+    os_security_group:
+      cloud: "{{ cloud_name }}"
+      state: present
+      name: "{{ sec_group_global }}"
+      description: security group for global access
+
+  - name: allow icmp globally
+    os_security_group_rule:
+      cloud: "{{ cloud_name }}"
+      security_group: "{{ sec_group_global }}"
+      protocol: icmp
+      remote_ip_prefix: "0.0.0.0/0"
+
+  - name: allow ssh globally
+    os_security_group_rule:
+      cloud: "{{ cloud_name }}"
+      security_group: "{{ sec_group_global }}"
+      protocol: tcp
+      port_range_min: 22
+      port_range_max: 22 
+      remote_ip_prefix: "0.0.0.0/0"
+
+  - name: allow https globally
+    os_security_group_rule:
+      cloud: "{{ cloud_name }}"
+      security_group: "{{ sec_group_global }}"
+      protocol: tcp
+      port_range_min: 443
+      port_range_max: 443 
+      remote_ip_prefix: "0.0.0.0/0"
+
+  - name: create a subnet within private network
+    os_subnet: 
+      state: present
+      network_name: "{{ network_name }}"
+      name: "{{ subnet_name }}"
+      cidr: "{{ network_cidr }}"
+      cloud: "{{ cloud_name }}"
+  
+  - name: create a router on the private network
+    os_router:
+      cloud: "{{ cloud_name }}"
+      state: present
+      name: "{{ router_name }}"
+      network: public
+      interfaces:
+        - "{{ subnet_name }}"
+  
+  - name: build DCOS instances
+    os_server:
+      timeout: 200
+      state: present
+      name: "{{ item.name | quote }}"
+      cloud: "{{ cloud_name }}"
+      image: "{{ item.image }}"
+      key_name: "{{ JS_ssh_keyname }}"
+      security_groups: "{{ sec_group_global }},{{ sec_group_internal }}"
+      flavor: "{{ item.size }}"
+      meta: "{{ item.meta }}"
+      auto_ip: "{{ item.auto_ip }}"
+      network: "{{ network_name }}"
+    loop: "{{ dcos_instance_list }}"
+    register: os_hosts
+
+  - name: assign a floating ip
+    os_floating_ip:
+      cloud: "{{ cloud_name }}"
+      server: "{{ item.name }}"
+      network: public
+    loop: "{{ public_ip_instance_list }}"
+
+#THIS HARDCODES THE INDEX OF THE os_hosts VARIABLE - IF YOU ADD NODES, THIS COULD BREAK - NODELISTWARN
+  - name: set main server ip as fact
+    set_fact: 
+      dcos_master_address: "{{ os_hosts.results[0]['openstack']['public_v4'] }}"
+  
+  - name: add main server as bastion host in ssh.cfg
+    blockinfile: 
+      path: ../ssh.cfg
+      insertafter: EOF
+      marker: "#{mark} Ansible Managed config"
+      create: yes
+      state: present
+      block: |
+        Host 10.0.0.*
+         User centos
+         StrictHostKeyChecking no
+         BatchMode yes
+         UserKnownHostsFile=/dev/null
+         ProxyCommand ssh -F ./ssh.cfg -q -W %h:%p {{ dcos_master_address }}
+         IdentityFile {{ JS_key_local_path }}
+      
+  - name: refresh the ansible inventory
+    meta: refresh_inventory

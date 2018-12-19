@@ -1,0 +1,4 @@
+---
+
+ - import_playbook: create_hosts.yml
+ - import_playbook: install.yml

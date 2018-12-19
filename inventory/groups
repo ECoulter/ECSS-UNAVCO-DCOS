@@ -1,0 +1,34 @@
+[meta-dcos_master]
+
+[meta-dcos_bootstrap]
+
+[meta-dcos_agent]
+
+[meta-dcos_pubagent]
+
+[dcos:children]
+meta-dcos_master
+meta-dcos_bootstrap
+meta-dcos_agent
+meta-dcos_pubagent
+
+[bootstraps:children]
+meta-dcos_bootstrap
+
+[masters:children]
+meta-dcos_master
+
+[agents:children]
+meta-dcos_agent
+
+[agent_publics:children]
+meta-dcos_pubagent
+
+[dcos:vars]
+ansible_ssh_user=centos
+
+dcos_ip_detect_interface='eth0'
+
+dcos_bootstrap_ip='' #REGISTERED AT END OF create_hosts.yml
+
+dcos_master_address='' #REGISTERED AFTER create_hosts.yml
