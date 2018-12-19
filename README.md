@@ -12,7 +12,7 @@ it should work via
 This is equivalent to the openrc.sh - may be included later as a vault.
 
 The basic format looks like:
-
+```
 clouds:
  tacc:
   auth: 
@@ -23,7 +23,7 @@ clouds:
   user\_domain\_name: value
   project\_domain\_name: value
   identity\_api\_version: 3
-
+```
 # Local edits
 Please insert the correct path to an ssh key that you've added to Jetstream in the `ssh.cfg`.
 
