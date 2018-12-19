@@ -7,7 +7,7 @@ it should work via
 
 `ansible-playbook -i inventory -l localhost,dcos plays/build_and_deploy.yml`
  
-####I don't have the file 'clouds.yaml' included, which is a necessity. 
+###I don't have the file 'clouds.yaml' included, which is a necessity. 
 
 This is equivalent to the openrc.sh - may be included later as a vault.
 
@@ -17,12 +17,12 @@ clouds:
  tacc:
   auth: 
    username: value
-   auth\_url: value
-   project\_name: value
+   auth_url: value
+   project_name: value
    password: value 
-  user\_domain\_name: value
-  project\_domain\_name: value
-  identity\_api\_version: 3
+  user_domain_name: value
+  project_domain_name: value
+  identity_api_version: 3
 ```
 # Local edits
 Please insert the correct path to an ssh key that you've added to Jetstream in the `ssh.cfg`.
