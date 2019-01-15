@@ -8,8 +8,9 @@ it should work via
 `ansible-playbook -i inventory -l localhost,dcos plays/build_and_deploy.yml`
  
 ###I don't have the file 'clouds.yaml' included, which is a necessity. 
+This file should be placed in the vars directory.
 
-This is equivalent to the openrc.sh - may be included later as a vault.
+It is equivalent to the openrc.sh - may be included later as a vault.
 
 The basic format looks like:
 ```
